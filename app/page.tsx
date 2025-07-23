@@ -1,103 +1,109 @@
-import Image from "next/image";
+'use client'
+
+import Link from 'next/link'
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <main className="min-h-screen bg-white text-gray-800 font-sans">
+      {/* Navbar */}
+      <nav className="bg-blue-950 text-white py-4 px-6 flex justify-between items-center shadow-md">
+        <div className="text-xl font-bold">ETA-IL</div>
+        <Link
+          href="/apply/step-1"
+          className="underline hover:text-gray-200"
+        >
+          Iniciar solicitud
+        </Link>
+      </nav>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      {/* Hero */}
+      <section className="relative bg-blue-950 text-white py-8 px-6 text-center overflow-hidden min-h-[250px]">
+        <div className="absolute inset-0 bg-[url('/bg-hero-israel.jpg')] bg-cover bg-center opacity-40 max-h-[300px]"></div>
+        <div className="relative z-10 max-w-3xl mx-auto">
+          <h1 className="text-5xl font-extrabold mb-4 leading-tight">
+            Autorización ETA-IL para viajar a Israel
+          </h1>
+          <p className="text-xl mb-8">
+            Presentá tu solicitud en minutos. Servicio rápido, en español y con revisión personalizada.
+          </p>
+          <Link
+            href="/apply/step-1"
+            className="inline-block bg-white text-blue-950 font-bold px-8 py-3 rounded-full shadow-md hover:bg-gray-200 transition"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            Iniciar solicitud
+          </Link>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+      </section>
+
+      {/* Paso a paso */}
+      <section className="bg-blue-100 py-3 px-4">
+        <div className="max-w-6xl mx-auto flex justify-between text-xs text-blue-950 font-medium overflow-x-auto">
+          <span>Disclaimers</span>
+          <span>Información de viaje</span>
+          <span>Pasaporte</span>
+          <span>Datos personales</span>
+          <span>Revisión</span>
+          <span>Pago</span>
+        </div>
+        <div className="max-w-6xl mx-auto h-2 bg-blue-200 rounded-full mt-2">
+          <div className="w-[14%] h-full bg-blue-950 rounded-full"></div>
+        </div>
+      </section>
+
+      {/* ¿Qué es el ETA-IL? */}
+      <section className="bg-white py-16 px-6 text-center">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-3xl font-bold mb-4">¿Qué es el ETA-IL?</h2>
+          <p className="text-lg text-gray-700">
+            El ETA-IL (Electronic Travel Authorization Israel) es una autorización electrónica obligatoria para ciudadanos de países exentos de visa, que desean ingresar a Israel por turismo, negocios o tránsito por hasta 90 días. Desde 2025, es requisito indispensable obtener el ETA-IL antes de abordar tu vuelo o crucero.
+          </p>
+        </div>
+      </section>
+
+      {/* Tarjetas de información */}
+      <section className="bg-gray-50 py-20 px-6">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8">
+          <div className="bg-white p-8 rounded-lg shadow-lg border border-gray-200">
+            <h3 className="text-2xl font-bold mb-4 text-blue-950">¿Por qué usar nuestro servicio?</h3>
+            <ul className="list-disc list-inside text-gray-700 space-y-2">
+              <li>Asistencia en español paso a paso</li>
+              <li>Respuesta 24/7</li>
+              <li>Revisión personalizada antes de enviar</li>
+              <li>Notificación por correo del estado</li>
+              <li>Soporte ante errores o rechazos</li>
+            </ul>
+          </div>
+          <div className="bg-white p-8 rounded-lg shadow-lg border border-gray-200">
+            <h3 className="text-2xl font-bold mb-4 text-blue-950">Costo y procesamiento</h3>
+            <p className="text-gray-700">
+              El costo total es de <strong>USD 60</strong>, incluyendo la tasa oficial. Procesamos tu solicitud el mismo día hábil y te mantenemos informado por email. La aprobación suele demorar entre 24 y 72 horas.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Disclaimer */}
+      <section className="bg-white py-12 px-6 border-t text-center text-sm text-gray-600">
+        <p className="mb-2">🔒 Tu información se transmite encriptada y es revisada por profesionales en viajes internacionales.</p>
+        <p>* Este sitio no pertenece al gobierno de Israel. Brindamos asistencia para gestionar tu solicitud ETA-IL de manera independiente.</p>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-100 py-4 text-center text-xs text-gray-500 border-t">
+        <p>© {new Date().getFullYear()} ETA-IL Ayuda | Todos los derechos reservados</p>
       </footer>
-    </div>
-  );
+
+      {/* Botón móvil fijo */}
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 md:hidden z-50">
+        <Link
+          href="/apply/step-1"
+          className="bg-blue-950 text-white font-bold px-6 py-3 rounded-full shadow-lg"
+        >
+          Iniciar solicitud
+        </Link>
+      </div>
+    </main>
+  )
 }
+
+
