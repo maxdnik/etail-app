@@ -423,7 +423,7 @@ export default function StepDatosPersonales() {
       <footer className="bg-white border-t mt-8 py-6 px-4 text-center text-sm text-gray-600">
         <div className="mb-2">🔒 Tu información se transmite encriptada y es revisada por profesionales en viajes internacionales.</div>
         <div className="mb-2">
-          * Este sitio no pertenece al gobierno de Israel. Brindamos asistencia para gestionar tu solicitud ETA-IL de manera independiente.
+          *  Brindamos asistencia para gestionar tu solicitud ETA-IL.
         </div>
         <div className="text-xs text-gray-400 mt-3">
           © {new Date().getFullYear()} ETA‑IL Ayuda | Todos los derechos reservados

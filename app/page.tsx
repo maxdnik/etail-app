@@ -74,9 +74,9 @@ export default function Home() {
             </ul>
           </div>
           <div className="bg-white p-8 rounded-lg shadow-lg border border-gray-200">
-            <h3 className="text-2xl font-bold mb-4 text-blue-950">Costo y procesamiento</h3>
+            <h3 className="text-2xl font-bold mb-4 text-blue-950">Procesamiento</h3>
             <p className="text-gray-700">
-              El costo total es de <strong>USD 60</strong>, incluyendo la tasa oficial. Procesamos tu solicitud el mismo día hábil y te mantenemos informado por email. La aprobación suele demorar entre 24 y 72 horas.
+              Procesamos tu solicitud el mismo día hábil y te mantenemos informado por email. La aprobación suele demorar entre 24 y 72 horas.
             </p>
           </div>
         </div>
@@ -85,7 +85,10 @@ export default function Home() {
       {/* Disclaimer */}
       <section className="bg-white py-12 px-6 border-t text-center text-sm text-gray-600">
         <p className="mb-2">🔒 Tu información se transmite encriptada y es revisada por profesionales en viajes internacionales.</p>
-        <p>* Este sitio no pertenece al gobierno de Israel. Brindamos asistencia para gestionar tu solicitud ETA-IL de manera independiente.</p>
+        <p></p>
+                <div className="mb-2">
+          * Brindamos asistencia para gestionar tu solicitud <span className="font-semibold">ETA-IL</span>.
+        </div>
       </section>
 
       {/* Footer */}

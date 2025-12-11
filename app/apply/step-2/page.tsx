@@ -201,7 +201,7 @@ export default function TravelInfo() {
           🔒 Tu información se transmite encriptada y es revisada por profesionales en viajes internacionales.
         </div>
         <div className="mb-2">
-          * Este sitio no pertenece al gobierno de <span className="italic text-blue-900">Israel</span>. Brindamos asistencia para gestionar tu solicitud <span className="font-semibold">ETA-IL</span> de manera independiente.
+          * Brindamos asistencia para gestionar tu solicitud <span className="font-semibold">ETA-IL</span>.
         </div>
         <div className="text-xs text-gray-400 mt-3">
           © {new Date().getFullYear()} ETA-IL Ayuda | Todos los derechos reservados

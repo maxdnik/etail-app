@@ -9,7 +9,7 @@ export default function CardPaymentBrick({ onPaySuccess }) {
     const interval = setInterval(() => {
       if (typeof window !== "undefined" && window.MercadoPago) {
         const mp = new window.MercadoPago(
-          "APP_USR-5e40f71c-c994-4fe2-abd7-dae85b680b33", // Usá tu key o process.env.NEXT_PUBLIC_MP_PUBLIC_KEY
+          "APP_USR-b0c78531-504a-4a73-ad56-78c99032fc8a", // Usá tu key o process.env.NEXT_PUBLIC_MP_PUBLIC_KEY
           { locale: "es-AR" }
         );
 

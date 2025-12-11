@@ -46,7 +46,7 @@ export default function PaymentPage() {
           <div className="mb-2">
             <span className="font-bold text-lg">Total a pagar:</span>
           </div>
-          <div className="text-4xl font-bold text-blue-900 mb-6 text-center">46 U$D</div>
+          <div className="text-4xl font-bold text-blue-900 mb-6 text-center">89.500 AR$</div>
           <p className="mt-4 text-sm text-gray-700">
             Una vez realizado el pago, la autorización suele resolverse entre <b>24 y 72 horas</b>.<br />
             Te notificaremos por email apenas haya novedades.
@@ -70,7 +70,7 @@ export default function PaymentPage() {
           🔒 Tu información se transmite encriptada y es revisada por profesionales en viajes internacionales.
         </div>
         <div className="mb-2">
-          * Este sitio no pertenece al gobierno de <span className="italic text-blue-900">Israel</span>. Brindamos asistencia para gestionar tu solicitud <span className="font-semibold">ETA-IL</span> de manera independiente.
+          * Brindamos asistencia para gestionar tu solicitud <span className="font-semibold">ETA-IL</span>.
         </div>
         <div className="text-xs text-gray-400 mt-3">
           © {new Date().getFullYear()} ETA-IL Ayuda | Todos los derechos reservados
