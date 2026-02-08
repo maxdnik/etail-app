@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -20,6 +20,15 @@ const stayDurations = [
   '61-90 días (máx. permitido)',
 ];
 
+type EtaIlDraft = {
+  travel?: {
+    purpose?: string;
+    arrival?: string; // YYYY-MM-DD
+    stay?: string;
+  };
+  [key: string]: any;
+};
+
 export default function TravelInfo() {
   const router = useRouter();
   const [purpose, setPurpose] = useState('');
@@ -34,35 +43,62 @@ export default function TravelInfo() {
     arrival.year.length === 4 &&
     duration;
 
-  const handleNext = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!allValid) return;
-    setLoading(true);
-
-    const travelData = {
-      purpose,
-      arrival: `${arrival.year}-${arrival.month}-${arrival.day}`,
-      duration,
-      createdAt: new Date(),
-    };
-
+  // Guarda en localStorage SIN backend (merge simple)
+  const updateDraft = (partial: Partial<EtaIlDraft>) => {
     try {
-      const res = await fetch('/api/travel-info', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(travelData),
+      const prev: EtaIlDraft = JSON.parse(localStorage.getItem('etaIlDraft') || '{}');
+      const next: EtaIlDraft = {
+        ...prev,
+        ...partial,
+        travel: {
+          ...(prev.travel || {}),
+          ...(partial.travel || {}),
+        },
+      };
+      localStorage.setItem('etaIlDraft', JSON.stringify(next));
+    } catch {
+      // noop
+    }
+  };
+
+  // Precarga desde draft (si existe)
+  useEffect(() => {
+    try {
+      const d: EtaIlDraft = JSON.parse(localStorage.getItem('etaIlDraft') || '{}');
+
+      if (d?.travel?.purpose) setPurpose(d.travel.purpose);
+
+      if (d?.travel?.arrival) {
+        const [yy, mm, dd] = String(d.travel.arrival).split('-');
+        setArrival({
+          day: dd || '',
+          month: mm || '',
+          year: yy || '',
+        });
+      }
+
+      if (d?.travel?.stay) setDuration(d.travel.stay);
+    } catch {
+      // noop
+    }
+  }, []);
+
+  const handleNext = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+
+    const arrivalStr = `${arrival.year}-${arrival.month}-${arrival.day}`; // formato simple
+
+    setLoading(true);
+    try {
+      updateDraft({
+        travel: {
+          purpose,
+          arrival: arrivalStr,
+          stay: duration,
+        },
       });
 
-      if (res.ok) {
-        const { id } = await res.json();
-        // Guarda el id para los siguientes pasos
-        localStorage.setItem('etaIlId', id);
-        router.push('/apply/step-3');
-      } else {
-        alert('Ocurrió un error guardando los datos.');
-      }
-    } catch (err) {
-      alert('Error de red. Reintentá.');
+      router.push('/apply/step-3');
     } finally {
       setLoading(false);
     }
@@ -101,7 +137,9 @@ export default function TravelInfo() {
           className="bg-white shadow-lg rounded-2xl p-10 max-w-2xl w-full border border-gray-200"
         >
           <h1 className="text-4xl font-extrabold text-[#19396c] mb-1">Información de viaje</h1>
-          <p className="text-sm text-gray-600 mb-7">Campos obligatorios (<span className="text-red-500">*</span>)</p>
+          <p className="text-sm text-gray-600 mb-7">
+            Campos obligatorios (<span className="text-red-500">*</span>)
+          </p>
 
           <div className="mb-7">
             <label className="block font-bold text-[#19396c] mb-2 text-lg">
@@ -109,13 +147,15 @@ export default function TravelInfo() {
             </label>
             <select
               value={purpose}
-              onChange={e => setPurpose(e.target.value)}
+              onChange={(e) => setPurpose(e.target.value)}
               className="w-full border-2 border-[#19396c] rounded-lg px-4 py-4 bg-white text-lg focus:ring-2 focus:ring-[#19396c] outline-none transition"
               required
             >
               <option value="">Seleccionar</option>
-              {travelPurposes.map(p => (
-                <option key={p} value={p}>{p}</option>
+              {travelPurposes.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
               ))}
             </select>
           </div>
@@ -131,7 +171,9 @@ export default function TravelInfo() {
                 maxLength={2}
                 pattern="\d{2}"
                 value={arrival.day}
-                onChange={e => setArrival(a => ({ ...a, day: e.target.value.replace(/\D/, '') }))}
+                onChange={(e) =>
+                  setArrival((a) => ({ ...a, day: e.target.value.replace(/\D/, '') }))
+                }
                 className="w-20 border-2 border-[#19396c] rounded-lg px-2 py-4 text-lg text-center bg-white focus:ring-2 focus:ring-[#19396c] outline-none transition"
                 required
               />
@@ -141,7 +183,9 @@ export default function TravelInfo() {
                 maxLength={2}
                 pattern="\d{2}"
                 value={arrival.month}
-                onChange={e => setArrival(a => ({ ...a, month: e.target.value.replace(/\D/, '') }))}
+                onChange={(e) =>
+                  setArrival((a) => ({ ...a, month: e.target.value.replace(/\D/, '') }))
+                }
                 className="w-20 border-2 border-[#19396c] rounded-lg px-2 py-4 text-lg text-center bg-white focus:ring-2 focus:ring-[#19396c] outline-none transition"
                 required
               />
@@ -151,7 +195,9 @@ export default function TravelInfo() {
                 maxLength={4}
                 pattern="\d{4}"
                 value={arrival.year}
-                onChange={e => setArrival(a => ({ ...a, year: e.target.value.replace(/\D/, '') }))}
+                onChange={(e) =>
+                  setArrival((a) => ({ ...a, year: e.target.value.replace(/\D/, '') }))
+                }
                 className="w-32 border-2 border-[#19396c] rounded-lg px-2 py-4 text-lg text-center bg-white focus:ring-2 focus:ring-[#19396c] outline-none transition"
                 required
               />
@@ -164,13 +210,15 @@ export default function TravelInfo() {
             </label>
             <select
               value={duration}
-              onChange={e => setDuration(e.target.value)}
+              onChange={(e) => setDuration(e.target.value)}
               className="w-full border-2 border-[#19396c] rounded-lg px-4 py-4 bg-white text-lg focus:ring-2 focus:ring-[#19396c] outline-none transition"
               required
             >
               <option value="">Seleccionar</option>
-              {stayDurations.map(d => (
-                <option key={d} value={d}>{d}</option>
+              {stayDurations.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
               ))}
             </select>
           </div>
@@ -195,13 +243,14 @@ export default function TravelInfo() {
           </div>
         </form>
       </div>
+
       {/* Footer */}
       <footer className="bg-white border-t mt-8 py-6 px-4 text-center text-sm text-gray-600">
         <div className="mb-2">
-          🔒 Tu información se transmite encriptada y es revisada por profesionales en viajes internacionales.
+          🔒 Tu información se transmite encriptada.
         </div>
         <div className="mb-2">
-          * Brindamos asistencia para gestionar tu solicitud <span className="font-semibold">ETA-IL</span>.
+          *<span className="font-semibold">ETA-IL</span>.
         </div>
         <div className="text-xs text-gray-400 mt-3">
           © {new Date().getFullYear()} ETA-IL Ayuda | Todos los derechos reservados

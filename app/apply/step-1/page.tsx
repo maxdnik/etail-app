@@ -9,10 +9,12 @@ export default function Step1() {
   const [acceptDisclaimer1, setAcceptDisclaimer1] = useState(false);
 
   const allAccepted = acceptDisclaimer1;
+
   function handleNext(e: React.FormEvent) {
     e.preventDefault();
     if (allAccepted) {
-      router.push("/apply/step-2");
+      // ✅ Redirige a la página de confirmación de email
+      router.push("/apply/email-confirmation");
     }
   }
 
@@ -28,44 +30,46 @@ export default function Step1() {
 
       {/* Progress */}
       <section className="bg-blue-100 py-3 px-4">
-        <div className="max-w-6xl mx-auto flex justify-between text-xs text-blue-950 font-medium">
-          <span className="text-blue-900">Disclaimers</span>
-          <span>Disclaimers</span>
-          <span className="text-blue-900">Información de viaje</span>
+        <div className="max-w-6xl mx-auto flex justify-between text-xs text-blue-950 font-medium overflow-x-auto">
+          <span className="text-blue-900 font-bold">Disclaimers</span>
+          <span>Inicio / Representante</span>
+          <span>Información de viaje</span>
           <span>Pasaporte</span>
           <span>Datos personales</span>
           <span>Revisión</span>
           <span>Pago</span>
         </div>
         <div className="max-w-6xl mx-auto h-2 bg-blue-200 rounded-full mt-2">
-          <div className="w-[16%] h-full bg-blue-950 rounded-full"></div>
+          {/* Primer paso: 8% aprox */}
+          <div className="w-[8%] h-full bg-blue-950 rounded-full transition-all duration-300"></div>
         </div>
       </section>
 
       {/* Disclaimers */}
       <form
-        className="flex-1 flex flex-col justify-center items-center px-4"
+        className="flex-1 flex flex-col justify-center items-center px-4 my-10"
         onSubmit={handleNext}
       >
-        <div className="bg-white p-6 rounded-lg shadow-md max-w-2xl w-full space-y-6 border border-gray-100">
-          <h1 className="text-3xl font-bold mb-4 text-center">
+        <div className="bg-white p-8 rounded-2xl shadow-lg max-w-3xl w-full space-y-8 border border-gray-100">
+          <h1 className="text-3xl font-extrabold mb-4 text-center text-[#19396c]">
             Términos y condiciones
           </h1>
+          
           <div className="space-y-6">
-            <div>
+            <div className="flex items-start p-4 bg-blue-50 rounded-xl border border-blue-100 hover:border-blue-200 transition">
               <input
                 id="disclaimer1"
                 type="checkbox"
                 checked={acceptDisclaimer1}
                 onChange={(e) => setAcceptDisclaimer1(e.target.checked)}
-                className="mr-3 accent-blue-950 w-5 h-5"
+                className="mt-1 mr-4 w-6 h-6 accent-[#19396c] cursor-pointer flex-shrink-0"
                 required
               />
               <label
                 htmlFor="disclaimer1"
-                className="text-base font-medium cursor-pointer select-none"
+                className="text-base text-gray-800 cursor-pointer select-none leading-relaxed"
               >
-                <span className="font-bold">Acepto:</span> Debe obtener una
+                <span className="font-bold text-[#19396c]">Acepto:</span> Debe obtener una
                 Autorización Electrónica de Viaje (ETA-IL) antes de comprar
                 cualquier pasaje a Israel. El Estado de Israel no se
                 responsabiliza por daños derivados de la denegación o
@@ -81,31 +85,30 @@ export default function Step1() {
               </label>
             </div>
           </div>
+          
+          <div className="flex justify-center pt-4">
+            <button
+                type="submit"
+                disabled={!allAccepted}
+                className={`px-10 py-4 rounded-full font-bold text-lg shadow-lg transition-all transform hover:-translate-y-1 ${
+                allAccepted
+                    ? "bg-[#19396c] text-white hover:bg-[#102445]"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed shadow-none hover:translate-y-0"
+                }`}
+            >
+                Siguiente paso →
+            </button>
+          </div>
         </div>
-
-        {/* Next button */}
-        <button
-          type="submit"
-          disabled={!allAccepted}
-          className={`mt-10 px-8 py-3 rounded-full font-bold text-lg shadow-md transition bg-blue-950 text-white ${
-            allAccepted
-              ? "hover:bg-blue-800"
-              : "opacity-60 cursor-not-allowed"
-          }`}
-        >
-          Siguiente paso
-        </button>
       </form>
 
       {/* Footer */}
-      <footer className="bg-white border-t mt-8 py-6 px-4 text-center text-sm text-gray-600">
+      <footer className="bg-white border-t mt-auto py-6 px-4 text-center text-sm text-gray-600">
         <div className="mb-2">
-          🔒 Tu información se transmite encriptada y es revisada por
-          profesionales en viajes internacionales.
+          🔒 Tu información se transmite encriptada.
         </div>
         <div className="mb-2">
-          *  Brindamos
-          asistencia para gestionar tu solicitud{" "}
+         {" "}
           <span className="font-semibold">ETA-IL</span>.
         </div>
         <div className="text-xs text-gray-400 mt-3">

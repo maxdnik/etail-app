@@ -1,17 +1,37 @@
+// app/api/travel-info/route.ts
 // @ts-nocheck
-import { NextResponse } from 'next/server';
-import clientPromise from '@/lib/mongodb';
 
-export async function POST(req) {
-  const client = await clientPromise;
-  const travelData = await req.json(); // ← Acá está el fix
+import { NextResponse } from "next/server";
+import dbConnect from "@/lib/mongodb";
+import EtaIlApplication from "@/lib/etaIlApplication";
 
+export async function POST(req: Request) {
   try {
-    const db = client.db();
-    const result = await db.collection('applications').insertOne(travelData); // Usás travelData
-    return NextResponse.json({ id: result.insertedId }); // Devuelve el ID
-  } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "Error guardando en la base" }, { status: 500 });
+    await dbConnect();
+
+    const body = await req.json();
+    const { id, ...travelData } = body;
+
+    if (!id) {
+      return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
+    }
+
+    const updated = await EtaIlApplication.findByIdAndUpdate(
+      id,
+      { $set: { travel: travelData } },
+      { new: true }
+    ).lean();
+
+    if (!updated) {
+      return NextResponse.json({ ok: false, error: "Application not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (e: any) {
+    console.error("travel-info error:", e);
+    return NextResponse.json(
+      { ok: false, error: e?.message || String(e) },
+      { status: 500 }
+    );
   }
 }

@@ -1,37 +1,45 @@
 // @ts-nocheck
-// app/api/save-application/route.ts
-import { NextRequest } from 'next/server';
-import clientPromise from '@/lib/mongodb'; // Ajusta el import si tu path es diferente
-import { ObjectId } from 'mongodb';
+import { NextResponse } from "next/server";
+import dbConnect from "@/lib/mongodb";
+import EtaIlApplication from "@/lib/etaIlApplication";
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const data = await req.json();
-    const { applicationId, ...fields } = data;
+    await dbConnect();
+    const body = await req.json();
+    const { applicationId, ...updateData } = body || {};
 
-    const client = await clientPromise;
-    const db = client.db();
-    const collection = db.collection('etailapplications');
-
-    let result;
-    if (applicationId) {
-      // Actualizar datos existentes
-      result = await collection.updateOne(
-        { _id: new ObjectId(applicationId) },
-        { $set: fields }
-      );
-    } else {
-      // Crear nueva aplicación
-      result = await collection.insertOne(fields);
+    // 1. Validar que tengamos datos para guardar
+    if (!applicationId && Object.keys(updateData).length === 0) {
+      return NextResponse.json({ ok: false, error: "No data provided" }, { status: 400 });
     }
 
-    return new Response(JSON.stringify({
-      ok: true,
-      applicationId: applicationId || result.insertedId,
-    }), { status: 200 });
-  } catch (err: any) {
-    console.error("Error en save-application:", err);
-    return new Response(JSON.stringify({ error: true, message: err.message || err }), { status: 500 });
+    let result;
+
+    if (applicationId) {
+      // 2. ACTUALIZACIÓN INTELIGENTE: 
+      // Usamos directamente updateData para no sobrescribir con objetos vacíos lo que no viene.
+      result = await EtaIlApplication.findByIdAndUpdate(
+        applicationId,
+        { $set: updateData }, // Solo actualiza las claves presentes en el JSON enviado
+        { new: true, upsert: false }
+      ).lean();
+
+      if (!result) {
+        return NextResponse.json({ ok: false, error: "Application not found" }, { status: 404 });
+      }
+    } else {
+      // 3. CREACIÓN:
+      result = await EtaIlApplication.create(updateData);
+    }
+
+    return NextResponse.json({ 
+      ok: true, 
+      id: result._id?.toString?.() || result._id 
+    });
+
+  } catch (e: any) {
+    console.error("save-application error:", e);
+    return NextResponse.json({ ok: false, error: e?.message || String(e) }, { status: 500 });
   }
 }
-

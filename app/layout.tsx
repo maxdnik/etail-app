@@ -1,7 +1,9 @@
+// @ts-nocheck
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { EtaIlProvider } from "@/lib/EtaIlContext"; // Ajusta el path si tu carpeta difiere
+import { EtaIlProvider } from "@/lib/EtaIlContext";
+import Script from "next/script"; // ✅ Importación necesaria para optimizar scripts
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,8 +28,11 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
-        {/* ...otros metatags */}
-        <script src="https://sdk.mercadopago.com/js/v2"></script>
+        {/* ✅ Cargamos el SDK de Mercado Pago con prioridad máxima */}
+        <Script
+          src="https://sdk.mercadopago.com/js/v2"
+          strategy="beforeInteractive"
+        />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <EtaIlProvider>

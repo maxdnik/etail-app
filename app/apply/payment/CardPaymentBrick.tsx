@@ -1,86 +1,98 @@
 // @ts-nocheck
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function CardPaymentBrick({ onPaySuccess }) {
   const [rejectedMessage, setRejectedMessage] = useState("");
+  const controllerRef = useRef(null); // ✅ Para controlar y limpiar la instancia
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    const initBrick = async () => {
+      // 1. Esperamos a que el SDK esté disponible en el objeto window
       if (typeof window !== "undefined" && window.MercadoPago) {
+        
+        // 2. Si ya hay una instancia activa (por navegación rápida), la cerramos
+        if (controllerRef.current) {
+          try { 
+            controllerRef.current.unmount(); 
+          } catch (e) { 
+            console.log("Nada que desmontar"); 
+          }
+        }
+
         const mp = new window.MercadoPago(
-          "APP_USR-b0c78531-504a-4a73-ad56-78c99032fc8a", // Usá tu key o process.env.NEXT_PUBLIC_MP_PUBLIC_KEY
+          "APP_USR-b0c78531-504a-4a73-ad56-78c99032fc8a", 
           { locale: "es-AR" }
         );
 
-        mp.bricks().create("cardPayment", "paymentBrick_container", {
-          initialization: {
-            amount: 46,
-          },
-          callbacks: {
-            onReady: () => {},
-            onSubmit: async (cardFormData) => {
-              try {
-                const applicationId = localStorage.getItem("etaIlId");
-                if (!applicationId) {
-                  setRejectedMessage("No se encontró el ID de la aplicación. Recargá la página.");
-                  return;
-                }
+        const bricksBuilder = mp.bricks();
 
-                // ---- (1) Obtené TODOS los datos completos del usuario del localStorage ----
-                const applicationData = JSON.parse(localStorage.getItem("applicationData") || "{}");
+        try {
+          // 3. Creamos el Brick y guardamos el controlador en la Ref
+          controllerRef.current = await bricksBuilder.create(
+            "cardPayment", 
+            "paymentBrick_container", 
+            {
+              initialization: { amount: 89500 },
+              callbacks: {
+                onReady: () => console.log("Brick listo"),
+                onSubmit: async (cardFormData) => {
+                  const fullDraft = JSON.parse(localStorage.getItem("etaIlDraft") || "{}");
+                  const applicationId = localStorage.getItem("etaIlId");
 
-                // (2) PATCH: actualizá la aplicación en la base si lo necesitás (opcional)
-                await fetch(`/api/etail-applications/${applicationId}`, {
-                  method: "PATCH",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(applicationData),
-                });
+                  const res = await fetch("/api/process-payment", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      ...cardFormData,
+                      applicationId,
+                      formData: fullDraft 
+                    }),
+                  });
 
-                // ---- (3) Enviá el pago Y los datos completos al backend ----
-                const res = await fetch("/api/process-payment", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    ...cardFormData,
-                    applicationId,
-                    applicant: applicationData, // <<---- ESTE ES EL CAMBIO CLAVE!!
-                  }),
-                });
-
-                const result = await res.json();
-
-                if (result.status === "approved" || result.body?.status === "approved") {
-                  onPaySuccess && onPaySuccess();
-                } else {
-                  setRejectedMessage(`❌ El pago fue rechazado: ${result.status_detail || "desconocido"}`);
-                  setTimeout(() => location.reload(), 4000);
-                }
-              } catch (err) {
-                setRejectedMessage("❌ Hubo un error al procesar el pago.");
-                setTimeout(() => location.reload(), 4000);
-              }
-            },
-            onError: (err) => {
-              setRejectedMessage("❌ Error en el Brick.");
-            },
-          },
-        });
-
-        clearInterval(interval);
+                  const result = await res.json();
+                  if (result.status === "approved" || result.ok) {
+                    localStorage.removeItem("etaIlDraft");
+                    localStorage.removeItem("etaIlId");
+                    onPaySuccess && onPaySuccess();
+                  } else {
+                    setRejectedMessage(`❌ Pago rechazado: ${result.error || "Intente con otra tarjeta"}`);
+                  }
+                },
+                onError: (error) => {
+                  console.error(error);
+                  setRejectedMessage("❌ Error al cargar la pasarela.");
+                },
+              },
+            }
+          );
+        } catch (e) {
+          console.error("Error al crear Brick:", e);
+        }
       }
-    }, 300);
-    return () => clearInterval(interval);
+    };
+
+    // Pequeño retardo para asegurar que el div del DOM esté renderizado
+    const timer = setTimeout(initBrick, 100);
+
+    return () => {
+      clearTimeout(timer);
+      // ✅ IMPORTANTE: Desmontamos el brick al salir de la página
+      if (controllerRef.current) {
+        try { controllerRef.current.unmount(); } catch (e) {}
+      }
+    };
   }, [onPaySuccess]);
 
   return (
-    <div>
+    <div className="w-full">
       {rejectedMessage && (
-        <div className="mb-4 p-4 text-red-700 bg-red-100 border border-red-300 rounded">
+        <div className="mb-4 p-4 text-red-800 bg-red-50 border-l-4 border-red-600 rounded font-bold animate-pulse">
           {rejectedMessage}
         </div>
       )}
-      <div id="paymentBrick_container" />
+      {/* Contenedor del Brick */}
+      <div id="paymentBrick_container" className="min-h-[450px]" />
     </div>
   );
 }

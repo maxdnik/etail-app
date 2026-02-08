@@ -64,7 +64,7 @@ export default function Home() {
       <section className="bg-gray-50 py-20 px-6">
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8">
           <div className="bg-white p-8 rounded-lg shadow-lg border border-gray-200">
-            <h3 className="text-2xl font-bold mb-4 text-blue-950">¿Por qué usar nuestro servicio?</h3>
+            <h3 className="text-2xl font-bold mb-4 text-blue-950">¿Qué incluye tu solicitud?</h3>
             <ul className="list-disc list-inside text-gray-700 space-y-2">
               <li>Asistencia en español paso a paso</li>
               <li>Respuesta 24/7</li>
@@ -84,10 +84,10 @@ export default function Home() {
 
       {/* Disclaimer */}
       <section className="bg-white py-12 px-6 border-t text-center text-sm text-gray-600">
-        <p className="mb-2">🔒 Tu información se transmite encriptada y es revisada por profesionales en viajes internacionales.</p>
+        <p className="mb-2">🔒 Tu información se transmite encriptada.</p>
         <p></p>
                 <div className="mb-2">
-          * Brindamos asistencia para gestionar tu solicitud <span className="font-semibold">ETA-IL</span>.
+          <span className="font-semibold">ETA-IL</span>.
         </div>
       </section>
 

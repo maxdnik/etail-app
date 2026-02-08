@@ -2,7 +2,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 const countries = [
@@ -50,8 +50,25 @@ const maritalStatusOptions = [
   { value: 'Viudo/a', label: 'Viudo/a' },
 ];
 
+// ✅ Draft local “sí o sí” (sin backend). Mergea en localStorage bajo personal.
+function updateDraftLocal(patch) {
+  try {
+    const prev = JSON.parse(localStorage.getItem('etaIlDraft') || '{}');
+    const next = {
+      ...prev,
+      ...patch,
+      personal: {
+        ...(prev.personal || {}),
+        ...(patch?.personal || {}),
+      },
+    };
+    localStorage.setItem('etaIlDraft', JSON.stringify(next));
+  } catch {}
+}
+
 export default function StepDatosPersonales() {
   const router = useRouter();
+
   const [form, setForm] = useState({
     nacionalidadAdicional: '',
     numeroIdIsrael: '',
@@ -70,10 +87,25 @@ export default function StepDatosPersonales() {
     telefonoTrabajo: '',
     emailTrabajo: '',
   });
+
   const [loading, setLoading] = useState(false);
 
-  const handleInput = e => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  // ✅ Precargar desde draft
+  useEffect(() => {
+    try {
+      const d = JSON.parse(localStorage.getItem('etaIlDraft') || '{}');
+      if (d?.personal) setForm((prev) => ({ ...prev, ...d.personal }));
+    } catch {}
+  }, []);
+
+  // ✅ Autosave en cada cambio
+  const handleInput = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => {
+      const next = { ...prev, [name]: value };
+      updateDraftLocal({ personal: next });
+      return next;
+    });
   };
 
   const handleNext = async (e) => {
@@ -83,9 +115,21 @@ export default function StepDatosPersonales() {
       alert("Debés ingresar el Número de ID israelí.");
       return;
     }
+
+    // ✅ Guardar draft sí o sí antes de navegar o postear
+    updateDraftLocal({ personal: { ...form } });
+
+    // ✅ FIX: no bloquear por etaIlId en Step-4
+    const id = localStorage.getItem('etaIlId');
+
+    // Si no hay id: avanzar igual
+    if (!id) {
+      router.push('/apply/step4-b');
+      return;
+    }
+
     setLoading(true);
 
-    const id = localStorage.getItem('etaIlId');
     const body = { ...form, id };
 
     try {
@@ -95,15 +139,12 @@ export default function StepDatosPersonales() {
         body: JSON.stringify(body),
       });
 
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({}));
-        alert(error.error || 'Ocurrió un error guardando los datos.');
-        setLoading(false);
-        return;
-      }
+      // ✅ aunque falle backend, avanzamos (ya quedó draft guardado)
       router.push('/apply/step4-b');
     } catch (e) {
-      alert("Error de red. Reintentá.");
+      // ✅ error de red: igual avanzamos
+      router.push('/apply/step4-b');
+    } finally {
       setLoading(false);
     }
   };
@@ -116,7 +157,7 @@ export default function StepDatosPersonales() {
     <main className="min-h-screen bg-[#f6f8fc] text-gray-800 font-sans flex flex-col">
       {/* Navbar */}
       <nav className="bg-blue-950 text-white py-4 px-6 flex justify-between items-center shadow-md">
-        <div className="text-xl font-bold">ETA‑IL</div>
+        <div className="text-xl font-bold">ETA-IL</div>
         <Link href="/" className="underline hover:text-gray-200">
           Inicio
         </Link>
@@ -421,12 +462,12 @@ export default function StepDatosPersonales() {
 
       {/* Footer */}
       <footer className="bg-white border-t mt-8 py-6 px-4 text-center text-sm text-gray-600">
-        <div className="mb-2">🔒 Tu información se transmite encriptada y es revisada por profesionales en viajes internacionales.</div>
+        <div className="mb-2">🔒 Tu información se transmite encriptada.</div>
         <div className="mb-2">
-          *  Brindamos asistencia para gestionar tu solicitud ETA-IL.
+          
         </div>
         <div className="text-xs text-gray-400 mt-3">
-          © {new Date().getFullYear()} ETA‑IL Ayuda | Todos los derechos reservados
+          © {new Date().getFullYear()} ETA-IL Ayuda | Todos los derechos reservados
         </div>
       </footer>
     </main>

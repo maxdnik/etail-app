@@ -1,112 +1,112 @@
 // @ts-nocheck
-import { NextRequest } from 'next/server';
-import nodemailer from 'nodemailer';
-import clientPromise from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
+import { NextRequest, NextResponse } from "next/server";
+import nodemailer from "nodemailer";
+import dbConnect from "@/lib/mongodb";
+import EtaIlApplication from "@/lib/etaIlApplication";
 
 export async function POST(req: NextRequest) {
-  const mercadopago = require('mercadopago');
+  const mercadopago = require("mercadopago");
   mercadopago.configure({
     access_token: process.env.MP_ACCESS_TOKEN,
   });
 
   try {
     const data = await req.json();
+    const { formData, applicationId, token, transaction_amount, installments, payment_method_id, issuer_id, payer } = data;
 
-    let applicationData = null;
-    if (data.applicationId) {
-      const client = await clientPromise;
-      const db = client.db();
-      applicationData = await db.collection('etailapplications').findOne({ _id: new ObjectId(data.applicationId) });
-      console.log('DEBUG applicationData:', applicationData); // Para debug
-    }
+    await dbConnect();
 
     const payment_data = {
-      transaction_amount: Number(data.transaction_amount) || 46,
-      token: data.token,
-      description: 'Trámite ETA-IL',
-      installments: data.installments || 1,
-      payment_method_id: data.payment_method_id,
-      issuer_id: data.issuer_id,
+      transaction_amount: Number(transaction_amount) || 89500,
+      token: token,
+      description: "Trámite ETA-IL Israel",
+      installments: installments || 1,
+      payment_method_id: payment_method_id,
+      issuer_id: issuer_id,
       payer: {
-        email: data.payer?.email,
-        identification: data.payer?.identification,
-      }
+        email: payer?.email,
+        identification: payer?.identification,
+      },
     };
 
-    // Realizar el pago
     const mpRes = await mercadopago.payment.save(payment_data);
+    const isApproved = mpRes?.body?.status === "approved" || mpRes?.status === "approved";
 
-    // Si el pago fue aprobado, mandá el email
-    if (
-      mpRes.body?.status === "approved" ||
-      mpRes.status === "approved"
-    ) {
-      // ------------ AJUSTE CLAVE: Campos anidados -----------------
-      const nombreCompleto = `${applicationData?.passport?.name || ''} ${applicationData?.passport?.surname || ''}`.trim();
-      const pasaporte = applicationData?.passport?.number || '-';
-      const emailPersona = applicationData?.personal?.workEmail || data.payer?.email || '-';
-      const pago = "Sí";
-      const idApp = applicationData?._id?.toString() || data.applicationId || '-';
+    if (isApproved) {
+      const finalData = {
+        ...formData,
+        status: "PENDIENTE",
+        paymentId: mpRes?.body?.id || mpRes?.id,
+        updatedAt: new Date()
+      };
 
-      // Podés sumar más datos relevantes, ejemplo:
-      const fechaNacimiento = applicationData?.passport?.birthDate || '-';
-      const paisEmision = applicationData?.passport?.country || '-';
-      const telefono = applicationData?.personal?.mobile || '-';
+      let savedApp = null;
 
+      // ✅ MEJORA DE PERSISTENCIA:
+      if (applicationId) {
+        // Intentamos actualizar
+        savedApp = await EtaIlApplication.findByIdAndUpdate(
+          applicationId, 
+          { $set: finalData }, 
+          { new: true }
+        );
+      }
+
+      // ✅ SI EL REGISTRO NO EXISTÍA (o el ID era viejo), LO CREAMOS DE CERO
+      if (!savedApp) {
+        console.log("ID no encontrado o inexistente, creando nuevo registro...");
+        savedApp = await EtaIlApplication.create(finalData);
+      }
+
+      // 4. Preparar datos para el Email (Usamos el ID REAL de la base de datos)
+      const idApp = savedApp._id.toString(); 
+      const shortId = idApp.substring(idApp.length - 5); // ✅ Ajuste para mostrar solo 5 dígitos
+      const nombreCompleto = `${formData?.passport?.name || ""} ${formData?.passport?.surname || ""}`.trim();
+      const emailDeRegistro = formData?.contactEmail || "-";
+      
       const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
+        host: process.env.SMTP_HOST || "smtp-relay.brevo.com",
         port: Number(process.env.SMTP_PORT) || 587,
         auth: {
           user: process.env.SMTP_USER,
           pass: process.env.SMTP_PASS,
-        }
+        },
       });
 
-      const subject = `🆕 Nueva Solicitud #${idApp}`;
+      const subject = `🆕 Nueva Solicitud #${shortId}`; // ✅ ID corto en el asunto
+      
       const html = `
-        <div style="font-family: sans-serif; color: #222;">
-          <h2 style="color: #1b3a6b;">¡Solicitud recibida!</h2>
-          <p>Tu solicitud para obtener el permiso <b>ETA-IL</b> ha sido recibida correctamente y ya está siendo procesada.</p>
-          <p><b>ID de solicitud:</b> #${idApp}</p>
-          <p>En el transcurso de las próximas <b>24 horas</b> vas a recibir en este mismo correo electrónico el permiso correspondiente.</p>
-          <p>Ante cualquier consulta, podés responder a este correo o escribirnos a <a href="mailto:contacto@israel-entrypiba.com">contacto@israel-entrypiba.com</a>.</p>
-          <p style="margin-top:2em; color:#888; font-size:12px;">Este mensaje es automático, no requiere respuesta.</p>
+        <div style="font-family: sans-serif; color: #222; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 15px;">
+          <h2 style="color: #19396c; border-bottom: 2px solid #19396c; padding-bottom: 10px;">¡Solicitud recibida!</h2>
+          <p>Hola <b>${nombreCompleto}</b>,</p>
+          <p>Tu solicitud para obtener el permiso <b>ETA-IL</b> ha sido recibida y pagada correctamente.</p>
+          
+          <div style="background-color: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; margin: 20px 0;">
+            <p style="margin: 5px 0; font-size: 14px;"><b>ID de solicitud:</b> <span style="font-family: monospace;">#${shortId}</span></p>
+            <p style="margin: 5px 0; font-size: 14px;"><b>Email de contacto:</b> ${emailDeRegistro}</p>
+          </div>
+
+          <p>En el transcurso de las próximas <b>24 a 72 horas</b> vas a recibir novedades en este mismo correo.</p>
+          <p>Ante cualquier consulta, escribinos a <a href="mailto:contacto@israel-entrypiba.com" style="color: #19396c; font-weight: bold; text-decoration: none;">contacto@israel-entrypiba.com</a>.</p>
         </div>
       `;
 
-      const text =
-        `¡Solicitud recibida!\n\n` +
-        `Tu solicitud para obtener el permiso ETA-IL ha sido recibida correctamente y ya está siendo procesada.\n\n` +
-        `ID de solicitud: #${idApp}\n\n` +
-        `En el transcurso de las próximas 24 horas vas a recibir en este mismo correo electrónico el permiso correspondiente.\n\n` +
-        `Ante cualquier consulta, podés responder a este correo o escribirnos a contacto@israel-entrypiba.com.\n\n` +
-        `---\nEste mensaje es automático, no requiere respuesta.`;
-
       await transporter.sendMail({
         from: '"ETA-IL Notificación" <contacto@israel-entrypiba.com>',
-        to: [
-          "contacto@israel-entrypiba.com",
-          emailPersona
-        ],
+        to: ["contacto@israel-entrypiba.com", emailDeRegistro], 
         subject,
-        text:
-          `Nueva solicitud cargada en el sistema:\n` +
-          `Nombre y Apellido: ${nombreCompleto}\n` +
-          `Pasaporte: ${pasaporte}\n` +
-          `Email: ${emailPersona}\n` +
-          `Pago: ${pago}\n` +
-          `ID: #${idApp}\n` +
-          `País de emisión del pasaporte: ${paisEmision}\n` +
-          `Fecha de nacimiento: ${fechaNacimiento}\n` +
-          `Teléfono: ${telefono}\n`,
         html,
+        text: `Solicitud recibida para ${nombreCompleto}. ID: ${shortId}. Email Registro: ${emailDeRegistro}. Pago: Aprobado.` // ✅ ID corto en texto plano
       });
     }
 
-    return new Response(JSON.stringify(mpRes), { status: 200 });
+    return NextResponse.json(mpRes.body || mpRes);
+
   } catch (err: any) {
     console.error("Error en process-payment:", err);
-    return new Response(JSON.stringify({ error: true, message: err.message || err }), { status: 500 });
+    return NextResponse.json(
+      { error: true, message: err?.message || "Error al procesar el pago" },
+      { status: 500 }
+    );
   }
 }

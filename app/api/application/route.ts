@@ -1,66 +1,72 @@
+// app/api/application/route.ts
 // @ts-nocheck
-import { NextResponse } from 'next/server';
-import clientPromise from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
 
-// GET: Buscar aplicación por ID
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const id = searchParams.get('id');
-  if (!id) return NextResponse.json({ error: 'ID requerido' }, { status: 400 });
+import { NextRequest, NextResponse } from "next/server";
+import dbConnect from "@/lib/mongodb";
+import EtaIlApplication from "@/lib/etaIlApplication";
 
-  const client = await clientPromise;
-  const db = client.db();
-
+export async function GET(req: NextRequest) {
   try {
-    const data = await db.collection('applications').findOne({ _id: new ObjectId(id) });
-    if (!data) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
-    // Podés ocultar el _id si no lo querés exponer
-    // delete data._id;
-    return NextResponse.json(data);
-  } catch (e) {
-    return NextResponse.json({ error: 'Error trayendo la aplicación.' }, { status: 500 });
-  }
-}
+    await dbConnect();
 
-// PATCH: Actualizar cualquier campo de la aplicación
-export async function PATCH(req: Request) {
-  try {
-    const body = await req.json();
-    const { id, ...fields } = body;
-    if (!id) return NextResponse.json({ error: 'ID requerido' }, { status: 400 });
-
-    const client = await clientPromise;
-    const db = client.db();
-
-    // Construimos el $set dinámico según qué campos quieras actualizar
-    let setObj = {};
-    if (fields.travel) {
-      // Si recibís travel, mapeá a tus campos correctos
-      setObj.purpose = fields.travel.purpose;
-      setObj.arrival = fields.travel.arrival;
-      setObj.duration = fields.travel.stay;
-    }
-    if (fields.passport) setObj.passport = fields.passport;
-    if (fields.personal) setObj.personal = fields.personal;
-    if (fields.migratory) setObj.migratory = fields.migratory;
-    // Agregá más según tu estructura
-
-    // Validación simple
-    if (Object.keys(setObj).length === 0) {
-      return NextResponse.json({ error: 'No se enviaron campos a actualizar' }, { status: 400 });
+    const id = req.nextUrl.searchParams.get("id");
+    if (!id) {
+      return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
     }
 
-    const result = await db.collection('applications').updateOne(
-      { _id: new ObjectId(id) },
-      { $set: setObj }
+    const doc = await EtaIlApplication.findById(id).lean();
+    if (!doc) {
+      return NextResponse.json({ ok: false, error: "Application not found" }, { status: 404 });
+    }
+
+    // 🔥 Normalizar: soporta docs guardados con distintos nombres
+    const travel =
+      doc.travel ??
+      doc.travelInfo ??
+      doc.travel_info ??
+      doc.travelData ??
+      doc.travel_data ??
+      {};
+
+    const passport =
+      doc.passport ??
+      doc.passportInfo ??
+      doc.passport_info ??
+      doc.passportData ??
+      doc.passport_data ??
+      {};
+
+    const personal =
+      doc.personal ??
+      doc.personalInfo ??
+      doc.personal_info ??
+      doc.personalData ??
+      doc.personal_data ??
+      {};
+
+    const declaration =
+      doc.declaration ??
+      doc.declarationInfo ??
+      doc.declaration_info ??
+      doc.declarationData ??
+      doc.declaration_data ??
+      {};
+
+    return NextResponse.json({
+      ok: true,
+      data: {
+        _id: doc._id?.toString?.() || doc._id,
+        travel,
+        passport,
+        personal,
+        declaration,
+      },
+    });
+  } catch (error: any) {
+    console.error("GET /api/application error:", error);
+    return NextResponse.json(
+      { ok: false, error: error?.message || String(error) },
+      { status: 500 }
     );
-
-    if (result.modifiedCount === 0) {
-      return NextResponse.json({ error: 'No se encontró la aplicación para actualizar.' }, { status: 404 });
-    }
-    return NextResponse.json({ ok: true });
-  } catch (e) {
-    return NextResponse.json({ error: 'Error actualizando la aplicación.' }, { status: 500 });
   }
 }

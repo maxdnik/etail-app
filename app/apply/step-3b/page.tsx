@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -49,6 +49,24 @@ const generos = [
   { value: 'Otro', label: 'Otro' },
 ];
 
+// ✅ Draft local “sí o sí” (NO depende de backend). Mergea en localStorage.
+function updateDraftLocal(patch: any) {
+  try {
+    const prev = JSON.parse(localStorage.getItem('etaIlDraft') || '{}');
+
+    const next = {
+      ...prev,
+      ...patch,
+      passport: {
+        ...(prev.passport || {}),
+        ...(patch?.passport || {}),
+      },
+    };
+
+    localStorage.setItem('etaIlDraft', JSON.stringify(next));
+  } catch {}
+}
+
 export default function Step3b() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -68,24 +86,57 @@ export default function Step3b() {
     gender: '',
   });
 
+  // ✅ Precargar desde draft si existe
+  useEffect(() => {
+    try {
+      const d = JSON.parse(localStorage.getItem('etaIlDraft') || '{}');
+      if (d?.passport) {
+        setPassport((prev) => ({ ...prev, ...d.passport }));
+      }
+    } catch {}
+  }, []);
+
   const allValid = Object.values(passport).every(v => v && v !== '');
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setPassport({ ...passport, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    setPassport((prev) => {
+      const next = { ...prev, [name]: value };
+      // ✅ autosave “sí o sí”
+      updateDraftLocal({ passport: next });
+      return next;
+    });
   };
 
-  // SOLO AQUÍ VA EL async
+  // ✅ helper para botones que actualizan state (biométrico)
+  const setPassportAndSave = (updater: any) => {
+    setPassport((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      updateDraftLocal({ passport: next });
+      return next;
+    });
+  };
+
+  // ✅ FIX: sin backend obligatorio en step-3b
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!allValid) return;
-    setLoading(true);
 
+    // ✅ Guardar draft siempre
+    updateDraftLocal({ passport: { ...passport } });
+
+    // ✅ NO bloquear por id
     const id = localStorage.getItem('etaIlId');
+
+    // Si NO hay id: avanzar directo a Step-4 (el id se exige en Step-5)
     if (!id) {
-      alert('No se encontró el id del proceso. Volvé al paso anterior.');
-      setLoading(false);
+      router.push('/apply/step-4');
       return;
     }
+
+    // Si hay id: opcionalmente persistir por API (como ya lo tenías)
+    setLoading(true);
 
     const passportData = {
       docType: passport.docType,
@@ -109,20 +160,22 @@ export default function Step3b() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(passportData),
       });
+
       if (!res.ok) {
-        const errorRes = await res.json().catch(() => ({}));
-        alert(errorRes.error || 'Ocurrió un error guardando los datos.');
-        setLoading(false);
+        // ✅ No frenar el flujo: si falla API, igual avanzamos (tenés draft guardado)
+        router.push('/apply/step-4');
         return;
       }
+
       router.push('/apply/step-4');
     } catch (e) {
-      alert('Error de red. Reintentá.');
+      // ✅ Error de red: igual avanzar (tenés draft guardado)
+      router.push('/apply/step-4');
+    } finally {
       setLoading(false);
     }
   };
 
-  // ----------- EL RETURN, NO CIERRES LA FUNCIÓN ANTES -----------
   return (
     <main className="min-h-screen bg-[#f6f8fc] text-gray-800 font-sans flex flex-col">
       <nav className="bg-blue-950 text-white py-4 px-6 flex justify-between items-center shadow-md">
@@ -131,6 +184,7 @@ export default function Step3b() {
           Inicio
         </Link>
       </nav>
+
       <section className="bg-blue-100 py-3 px-4">
         <div className="max-w-6xl mx-auto flex justify-between text-xs text-blue-950 font-medium overflow-x-auto">
           <span>Disclaimers</span>
@@ -144,6 +198,7 @@ export default function Step3b() {
           <div className="w-[48%] h-full bg-blue-950 rounded-full transition-all duration-300"></div>
         </div>
       </section>
+
       <div className="flex-1 flex justify-center items-start py-10">
         <form
           onSubmit={handleNext}
@@ -153,6 +208,7 @@ export default function Step3b() {
           <p className="text-sm text-red-600 mb-1">
             Campos obligatorios (<span className="text-red-500">*</span>)
           </p>
+
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div>
               <label className="font-bold text-[#19396c] mb-2 block">Tipo de documento *</label>
@@ -168,6 +224,7 @@ export default function Step3b() {
                 ))}
               </select>
             </div>
+
             <div>
               <label className="font-bold text-[#19396c] mb-2 block">Número de pasaporte *</label>
               <input
@@ -179,6 +236,7 @@ export default function Step3b() {
                 required
               />
             </div>
+
             <div>
               <label className="font-bold text-[#19396c] mb-2 block">País de emisión *</label>
               <select
@@ -194,6 +252,7 @@ export default function Step3b() {
                 ))}
               </select>
             </div>
+
             <div>
               <label className="font-bold text-[#19396c] mb-2 block">Nacionalidad *</label>
               <select
@@ -209,6 +268,7 @@ export default function Step3b() {
                 ))}
               </select>
             </div>
+
             <div>
               <label className="font-bold text-[#19396c] mb-2 block">Apellido *</label>
               <input
@@ -220,6 +280,7 @@ export default function Step3b() {
                 required
               />
             </div>
+
             <div>
               <label className="font-bold text-[#19396c] mb-2 block">Nombre/s *</label>
               <input
@@ -231,23 +292,36 @@ export default function Step3b() {
                 required
               />
             </div>
+
             <div>
               <label className="font-bold text-[#19396c] mb-2 block">¿Pasaporte biométrico? *</label>
               <div className="flex gap-4">
-                <button type="button"
-                  className={`px-6 py-2 rounded-lg border-2 text-lg font-bold ${passport.biometric === 'No'
-                    ? 'bg-[#19396c] text-white border-[#19396c]' : 'bg-white text-[#19396c] border-[#19396c]'
+                <button
+                  type="button"
+                  className={`px-6 py-2 rounded-lg border-2 text-lg font-bold ${
+                    passport.biometric === 'No'
+                      ? 'bg-[#19396c] text-white border-[#19396c]'
+                      : 'bg-white text-[#19396c] border-[#19396c]'
                   }`}
-                  onClick={() => setPassport(f => ({ ...f, biometric: 'No' }))}
-                >No</button>
-                <button type="button"
-                  className={`px-6 py-2 rounded-lg border-2 text-lg font-bold ${passport.biometric === 'Sí'
-                    ? 'bg-[#19396c] text-white border-[#19396c]' : 'bg-white text-[#19396c] border-[#19396c]'
+                  onClick={() => setPassportAndSave((f: any) => ({ ...f, biometric: 'No' }))}
+                >
+                  No
+                </button>
+
+                <button
+                  type="button"
+                  className={`px-6 py-2 rounded-lg border-2 text-lg font-bold ${
+                    passport.biometric === 'Sí'
+                      ? 'bg-[#19396c] text-white border-[#19396c]'
+                      : 'bg-white text-[#19396c] border-[#19396c]'
                   }`}
-                  onClick={() => setPassport(f => ({ ...f, biometric: 'Sí' }))}
-                >Sí</button>
+                  onClick={() => setPassportAndSave((f: any) => ({ ...f, biometric: 'Sí' }))}
+                >
+                  Sí
+                </button>
               </div>
             </div>
+
             {/* Fechas */}
             <div>
               <label className="font-bold text-[#19396c] mb-2 block">Fecha de emisión *</label>
@@ -284,6 +358,7 @@ export default function Step3b() {
                 />
               </div>
             </div>
+
             <div>
               <label className="font-bold text-[#19396c] mb-2 block">Fecha de vencimiento *</label>
               <div className="flex gap-2">
@@ -319,6 +394,7 @@ export default function Step3b() {
                 />
               </div>
             </div>
+
             <div>
               <label className="font-bold text-[#19396c] mb-2 block">Fecha de nacimiento *</label>
               <div className="flex gap-2">
@@ -354,6 +430,7 @@ export default function Step3b() {
                 />
               </div>
             </div>
+
             <div>
               <label className="font-bold text-[#19396c] mb-2 block">Lugar de nacimiento *</label>
               <select
@@ -369,6 +446,7 @@ export default function Step3b() {
                 ))}
               </select>
             </div>
+
             <div>
               <label className="font-bold text-[#19396c] mb-2 block">Género *</label>
               <select
@@ -384,6 +462,7 @@ export default function Step3b() {
               </select>
             </div>
           </div>
+
           <div className="flex justify-between mt-10">
             <button
               type="button"
@@ -392,20 +471,24 @@ export default function Step3b() {
             >
               ← Volver
             </button>
+
             <button
               type="submit"
               disabled={!allValid || loading}
-              className={`px-8 py-3 rounded-full font-bold text-lg bg-[#19396c] text-white hover:bg-[#818ead] transition ${allValid && !loading ? '' : 'opacity-60 cursor-not-allowed'}`}
+              className={`px-8 py-3 rounded-full font-bold text-lg bg-[#19396c] text-white hover:bg-[#818ead] transition ${
+                allValid && !loading ? '' : 'opacity-60 cursor-not-allowed'
+              }`}
             >
               {loading ? 'Guardando...' : 'Siguiente →'}
             </button>
           </div>
         </form>
       </div>
+
       <footer className="bg-white border-t mt-8 py-6 px-4 text-center text-sm text-gray-600">
-        <div className="mb-2">🔒 Tu información se transmite encriptada y es revisada por profesionales en viajes internacionales.</div>
+        <div className="mb-2">🔒 Tu información se transmite encriptada.</div>
         <div className="mb-2">
-          *Brindamos asistencia para gestionar tu solicitud <span className="font-semibold">ETA-IL</span>.
+          <span className="font-semibold">ETA-IL</span>.
         </div>
         <div className="text-xs text-gray-400 mt-3">
           © {new Date().getFullYear()} ETA-IL Ayuda | Todos los derechos reservados
